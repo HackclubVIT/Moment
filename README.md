@@ -10,11 +10,11 @@ RAG-powered **"Ask Anything"** queries.
 ``` text
 Moment/
 ├── ai/
-│   ├── llm/          # Arshia
-│   ├── rag/          # Aman
-│   └── whisper/      # Rushaan
-├── backend/          # Raghavraj
-├── frontend/         # Manan
+│   ├── llm/          
+│   ├── rag/          
+│   └── whisper/      
+├── backend/          
+├── frontend/        
 ├── data/
 └── docs/
 ```
