@@ -150,7 +150,8 @@ ai/whisper/
 ├── local_whisper.py     # Local CPU/GPU fallback
 ├── cleaner.py           # Minimal transcript cleaning
 ├── requirements.txt     # Python dependencies
-├── README.md            # Documentation
+├── README.md            # Architecture & API reference
+├── GETTING_STARTED.md   # Step-by-step setup and team guide
 └── tests/
     ├── conftest.py          # Shared fixtures
     ├── test_config.py
