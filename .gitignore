@@ -11,3 +11,4 @@ data/transcripts/*
 
 data/meetings/*
 !data/meetings/.gitkeep
+.venv/
