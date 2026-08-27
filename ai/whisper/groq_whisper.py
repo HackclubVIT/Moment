@@ -84,7 +84,7 @@ class GroqWhisper:
 
         with open(audio_file_path, "rb") as f:
             files = {
-                "file": (audio_file_path.name, f, "audio/wav"),
+                "file": (audio_file_path.name, f),
             }
             resp = requests.post(
                 url,

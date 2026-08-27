@@ -102,7 +102,8 @@ class LocalWhisperX:
         audio = whisperx.load_audio(audio_path)
 
         # 1. Transcribe
-        task = "translate" if translate and language != "en" else "transcribe"
+        use_translation = translate and language not in ("auto", "en")
+        task = "translate" if use_translation else "transcribe"
         result = self._model.transcribe(
             audio,
             batch_size=16 if self._device == "cuda" else 4,

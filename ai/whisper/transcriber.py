@@ -66,6 +66,7 @@ def transcribe_audio(
         if on_progress:
             on_progress(stage, progress)
 
+    chunk_paths: list[str] = []
     try:
         # ── 1. Validate ────────────────────────────────────────────────
         _emit("validating", 0.0)
@@ -138,7 +139,13 @@ def transcribe_audio(
                 "processing_time_seconds": round(time.time() - t0, 2),
                 "inference_mode": inference_mode,
                 "model": model_used,
-                "num_speakers": (len({s.get("speaker", "SPEAKER_00") for s in all_segments}) if all_segments else 0),
+                "language_detected": detected_language,
+                "num_speakers": (
+                    len({s.get("speaker", "SPEAKER_00") for s in all_segments})
+                    if all_segments
+                    else 0
+                ),
+                "num_segments": len(all_segments),
                 "audio_path": str(audio_path),
                 "transcript_path": target_path,
                 "created_at": datetime.now(timezone.utc).isoformat(),
@@ -162,6 +169,14 @@ def transcribe_audio(
         logger.exception("Transcription failed for %s", meeting_id)
         _emit("error", 0.0)
         return _error_response(meeting_id, str(exc))
+
+    finally:
+        for p in chunk_paths:
+            if p != str(audio_path):
+                try:
+                    Path(p).unlink(missing_ok=True)
+                except Exception:
+                    pass
 
 
 # ── internal helpers ────────────────────────────────────────────────────
@@ -232,27 +247,31 @@ def _maybe_chunk(
     if duration_hrs <= cfg.max_chunk_hours:
         return [audio_path]
 
-    data, sr = sf.read(audio_path, dtype="float32")
-    chunk_samples = int(cfg.max_chunk_hours * 3600 * sr)
-    overlap_samples = int(30 * sr)  # 30-second overlap
+    with sf.SoundFile(audio_path) as infile:
+        sr = infile.samplerate
+        total_frames = len(infile)
+        chunk_samples = int(cfg.max_chunk_hours * 3600 * sr)
+        overlap_samples = int(30 * sr)  # 30-second overlap
 
-    # If chunk is smaller than overlap, no point in chunking
-    if chunk_samples <= overlap_samples:
-        return [audio_path]
+        # If chunk is smaller than overlap, no point in chunking
+        if chunk_samples <= overlap_samples:
+            return [audio_path]
 
-    chunks: list[str] = []
-    start = 0
-    while start < len(data):
-        end = min(start + chunk_samples, len(data))
-        chunk_data = data[start:end]
+        chunks: list[str] = []
+        start = 0
+        while start < total_frames:
+            frames_to_read = min(chunk_samples, total_frames - start)
+            infile.seek(start)
+            chunk_data = infile.read(frames_to_read, dtype="float32")
 
-        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-        sf.write(tmp.name, chunk_data, sr, subtype="PCM_16")
-        chunks.append(tmp.name)
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                tmp_path = tmp.name
+            sf.write(tmp_path, chunk_data, sr, subtype="PCM_16")
+            chunks.append(tmp_path)
 
-        if end >= len(data):
-            break
-        start = end - overlap_samples  # overlap for continuity
+            if start + frames_to_read >= total_frames:
+                break
+            start += chunk_samples - overlap_samples
 
     logger.info("Split %.1f-hour audio into %d chunks", duration_hrs, len(chunks))
     return chunks

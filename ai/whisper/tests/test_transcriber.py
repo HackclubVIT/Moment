@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
 from ai.whisper.transcriber import transcribe_audio, _error_response, _maybe_chunk
 
 
@@ -92,23 +90,30 @@ class TestMaybeChunk:
         assert len(chunks) == 1
         assert chunks[0] == silent_wav
 
-    def test_long_audio_is_chunked(self, sine_wav, test_config):
-        # Force chunking by setting max_chunk_hours to yield ~1s chunks
-        # (the sine_wav is 3 seconds, so this should produce multiple chunks)
-        from ai.whisper.config import WhisperConfig
+    def test_long_audio_is_chunked(self, tmp_path):
+        """Chunking should create multiple chunk files when duration > max_chunk_hours."""
+        from pathlib import Path
 
-        # 1 second = 1/3600 hours ≈ 0.000278 hrs; but we need chunk > overlap (30s)
-        # Instead, test the logic by using a file that we claim is >2hrs
-        # We just verify that when duration_hrs > max_chunk_hours, it chunks
+        from ai.whisper.config import WhisperConfig
+        import numpy as np
         import soundfile as sf
 
-        info = sf.info(sine_wav)
-        actual_hrs = info.duration / 3600  # ~0.000833 hrs
+        sr = 16000
+        seconds = 70  # > 30s overlap so chunking can actually occur
+        t = np.linspace(0, seconds, seconds * sr, endpoint=False)
+        audio = (0.1 * np.sin(2 * np.pi * 440 * t)).astype("float32")
+        audio_path = tmp_path / "long.wav"
+        sf.write(str(audio_path), audio, sr, subtype="PCM_16")
 
-        # Set max_chunk_hours smaller than actual duration in hours
-        tiny_cfg = WhisperConfig(max_chunk_hours=actual_hrs / 3)
+        info = sf.info(str(audio_path))
+        duration_hrs = info.duration / 3600
 
-        chunks = _maybe_chunk(sine_wav, actual_hrs, tiny_cfg)
-        # With a 3s file and ~1s chunk, overlap (30s) exceeds chunk size,
-        # so we just verify the branch was taken and at least 1 chunk was made
-        assert len(chunks) >= 1
+        cfg = WhisperConfig(max_chunk_hours=0.01)  # 36s chunks (> 30s overlap)
+        chunks = _maybe_chunk(str(audio_path), duration_hrs, cfg)
+
+        try:
+            assert len(chunks) > 1
+        finally:
+            for p in chunks:
+                if p != str(audio_path):
+                    Path(p).unlink(missing_ok=True)

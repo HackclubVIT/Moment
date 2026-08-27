@@ -224,12 +224,14 @@ class AudioRecorder:
     def _mic_callback(self, indata: np.ndarray, frames: int, time_info, status) -> None:
         if status:
             logger.debug("Mic stream status: %s", status)
-        self._mic_chunks.append(indata.copy())
+        with self._lock:
+            self._mic_chunks.append(indata.copy())
 
     def _sys_callback(self, indata: np.ndarray, frames: int, time_info, status) -> None:
         if status:
             logger.debug("System stream status: %s", status)
-        self._sys_chunks.append(indata.copy())
+        with self._lock:
+            self._sys_chunks.append(indata.copy())
 
     # ── mixing ──────────────────────────────────────────────────────────
 
@@ -245,12 +247,18 @@ class AudioRecorder:
         If either stream is empty, the other is returned as-is.
         Streams of different lengths are zero-padded to match.
         """
+        # Ensure mono 1D arrays (sounddevice provides shape (frames, channels))
+        if mic.ndim > 1:
+            mic = mic.mean(axis=1)
+        if system.ndim > 1:
+            system = system.mean(axis=1)
+
         if mic.size == 0 and system.size == 0:
             return np.array([], dtype="float32")
         if mic.size == 0:
-            return system
+            return system.astype("float32")
         if system.size == 0:
-            return mic
+            return mic.astype("float32")
 
         # Ensure same length
         target_len = max(len(mic), len(system))
