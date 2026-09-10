@@ -139,8 +139,8 @@ class LocalWhisperX:
                 )
                 diarize_segments = diarize_model(audio)
                 result = whisperx.assign_word_speakers(diarize_segments, result)
-            except Exception:
-                pass  # non-fatal
+            except Exception as exc:
+                logger.warning("Diarization encountered an error (continuing without diarization): %s", exc)
 
         # 4. Build result
         segments = []
