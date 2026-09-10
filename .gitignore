@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 node_modules/
+venv/
+.venv/
+*.egg-info/
 
 data/recordings/*
 !data/recordings/.gitkeep
@@ -11,3 +14,11 @@ data/transcripts/*
 
 data/meetings/*
 !data/meetings/.gitkeep
+data/test_audio/
+
+.DS_Store
+.pytest_cache/
+
+plan/
+plan
+
