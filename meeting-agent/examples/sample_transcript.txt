@@ -1,0 +1,13 @@
+[0:00] Alice: Welcome everyone, thanks for joining the sprint review.
+[0:12] Bob: Thanks, let's get started.
+[0:20] Alice: The main topic today is the new onboarding flow.
+[0:30] Bob: We agreed to ship the onboarding redesign by Friday.
+[0:45] Alice: Decision: we will go with the new onboarding flow.
+[1:05] Bob: Alice will draft the API spec by Wednesday.
+[1:30] Alice: I will follow up with the design team tomorrow.
+[3:10] Carol: We need to fix the login bug before the release.
+[3:40] Carol: The bug is blocking new signups, so it is a priority.
+[5:20] Bob: There is an open question about the database migration.
+[5:40] Alice: We should discuss the budget for next quarter.
+[6:00] Bob: Let's schedule the next sync for Monday.
+[6:15] Alice: That's all for today, thanks everyone.

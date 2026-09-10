@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.uv/
+.pytest_cache/
+.env
+output/
+*.db
+*.db-shm
+*.db-wal
+chrome_profile/
+demo_meeting.wav
+dist/
+build/
+*.egg-info/
