@@ -1,3 +1,5 @@
+import os
+
 from groq import Groq
 
 from ai.llm.config import GROQ_API_KEY, GROQ_LLM_MODEL
@@ -9,14 +11,15 @@ class GroqLLMClient:
     """Client responsible for communicating with the Groq LLM."""
 
     def __init__(self):
-        if not GROQ_API_KEY:
+        api_key = os.getenv("GROQ_API_KEY") or GROQ_API_KEY
+        if not api_key:
             raise ValueError(
                 "GROQ_API_KEY is not set. "
                 "Add your API key to the .env file."
             )
 
-        self.client = Groq(api_key=GROQ_API_KEY)
-        self.model = GROQ_LLM_MODEL
+        self.client = Groq(api_key=api_key)
+        self.model = os.getenv("GROQ_LLM_MODEL") or GROQ_LLM_MODEL
 
     def analyze_transcript(self, transcript: str) -> MeetingIntelligence:
         """Analyze a meeting transcript and return structured intelligence."""
@@ -41,5 +44,7 @@ class GroqLLMClient:
         )
 
         content = response.choices[0].message.content
+        if not content:
+            raise ValueError("Groq LLM returned empty response content; cannot parse meeting intelligence JSON.")
 
         return MeetingIntelligence.model_validate_json(content)
